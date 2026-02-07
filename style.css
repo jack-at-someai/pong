@@ -103,6 +103,33 @@ h1 {
   margin-bottom: 16px;
 }
 
+.mode-select {
+  display: flex;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.mode-btn {
+  background: #7200CB;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 12px 28px;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+}
+
+.mode-btn:hover {
+  background: #8E33D5;
+  transform: scale(1.05);
+}
+
+.mode-select.hidden {
+  display: none;
+}
+
 #start-btn {
   background: #7200CB;
   color: #fff;
@@ -117,6 +144,10 @@ h1 {
 
 #start-btn:hover {
   background: #8E33D5;
+}
+
+#start-btn.hidden {
+  display: none;
 }
 
 .instructions {

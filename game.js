@@ -3,9 +3,15 @@
   const ctx = canvas.getContext('2d');
   const p1ScoreEl = document.getElementById('p1-score');
   const p2ScoreEl = document.getElementById('p2-score');
+  const p1LabelEl = document.getElementById('p1-label');
+  const p2LabelEl = document.getElementById('p2-label');
   const overlay = document.getElementById('overlay');
   const overlayText = document.getElementById('overlay-text');
   const startBtn = document.getElementById('start-btn');
+  const modeSelect = document.getElementById('mode-select');
+  const btnAI = document.getElementById('btn-ai');
+  const btn2P = document.getElementById('btn-2p');
+  const instructionsEl = document.getElementById('instructions');
 
   const W = 600;
   const H = 400;
@@ -22,7 +28,6 @@
   const PADDLE_SPEED = 6;
   const AI_SPEED = 4.5;
 
-  // Sounder colors
   const COL = {
     bg: '#0d001a',
     center: '#2E0051',
@@ -34,7 +39,8 @@
     net: '#44007A'
   };
 
-  let p1, p2, ball, p1Score, p2Score, running, paused;
+  let gameMode = 'ai'; // 'ai' or '2p'
+  let p1, p2, ball, p1Score, p2Score, running;
   let trail = [];
   let particles = [];
   let mouseY = H / 2;
@@ -53,7 +59,7 @@
   }
 
   function resetBall(dir) {
-    const angle = (Math.random() * 0.8 - 0.4); // -0.4 to 0.4 radians
+    const angle = (Math.random() * 0.8 - 0.4);
     const speed = BALL_SPEED_INIT;
     ball = {
       x: W / 2,
@@ -92,7 +98,6 @@
   }
 
   function predictBallY() {
-    // Simple prediction: extrapolate ball to paddle x, bouncing off walls
     let bx = ball.x, by = ball.y, bvx = ball.vx, bvy = ball.vy;
     const targetX = p2.x;
     if (bvx <= 0) return H / 2;
@@ -108,15 +113,20 @@
 
   // ---- UPDATE ----
   function update() {
-    // Player paddle
+    // Player 1 paddle (mouse or W/S keys)
     if (usingMouse) {
       const target = mouseY - PADDLE_H / 2;
       p1.y += (target - p1.y) * 0.3;
     }
     p1.y = Math.max(0, Math.min(H - PADDLE_H, p1.y));
 
-    // AI
-    aiUpdate();
+    // Player 2 / AI
+    if (gameMode === 'ai') {
+      aiUpdate();
+    } else {
+      // P2 keyboard handled in setInterval below
+      p2.y = Math.max(0, Math.min(H - PADDLE_H, p2.y));
+    }
 
     // Ball trail
     trail.push({ x: ball.x, y: ball.y });
@@ -137,7 +147,6 @@
     }
 
     // Paddle collisions
-    // Player paddle (left)
     if (ball.vx < 0 &&
         ball.x - BALL_R <= p1.x + PADDLE_W &&
         ball.x - BALL_R >= p1.x &&
@@ -146,7 +155,6 @@
       spawnHitParticles(p1.x + PADDLE_W, ball.y, COL.paddle1);
     }
 
-    // AI paddle (right)
     if (ball.vx > 0 &&
         ball.x + BALL_R >= p2.x &&
         ball.x + BALL_R <= p2.x + PADDLE_W &&
@@ -159,13 +167,15 @@
     if (ball.x < -BALL_R) {
       p2Score++;
       p2ScoreEl.textContent = p2Score;
-      if (p2Score >= WIN_SCORE) { endGame('AI wins!'); return; }
+      const p2Name = gameMode === 'ai' ? 'AI' : 'P2';
+      if (p2Score >= WIN_SCORE) { endGame(p2Name + ' wins!'); return; }
       resetBall(1);
     }
     if (ball.x > W + BALL_R) {
       p1Score++;
       p1ScoreEl.textContent = p1Score;
-      if (p1Score >= WIN_SCORE) { endGame('You win!'); return; }
+      const p1Name = gameMode === '2p' ? 'P1' : 'You';
+      if (p1Score >= WIN_SCORE) { endGame(p1Name + ' win' + (gameMode === 'ai' ? '!' : 's!')); return; }
       resetBall(-1);
     }
 
@@ -180,13 +190,11 @@
   }
 
   function handlePaddleHit(paddle, dir) {
-    // Where on paddle did it hit? -1 to 1
     const hitPos = (ball.y - (paddle.y + PADDLE_H / 2)) / (PADDLE_H / 2);
-    const angle = hitPos * (Math.PI / 4); // max 45 degrees
+    const angle = hitPos * (Math.PI / 4);
     ball.speed = Math.min(ball.speed + 0.3, BALL_SPEED_MAX);
     ball.vx = ball.speed * Math.cos(angle) * dir;
     ball.vy = ball.speed * Math.sin(angle);
-    // Push ball out of paddle
     if (dir === 1) ball.x = paddle.x + PADDLE_W + BALL_R;
     else ball.x = paddle.x - BALL_R;
   }
@@ -242,7 +250,7 @@
     ctx.fill();
     ctx.shadowBlur = 0;
 
-    // Player paddle
+    // Player 1 paddle
     ctx.fillStyle = COL.paddle1;
     ctx.shadowColor = COL.paddle1;
     ctx.shadowBlur = 10;
@@ -250,7 +258,7 @@
     ctx.fill();
     ctx.shadowBlur = 0;
 
-    // AI paddle
+    // Player 2 / AI paddle
     ctx.fillStyle = COL.paddle2;
     ctx.shadowColor = COL.paddle2;
     ctx.shadowBlur = 10;
@@ -291,33 +299,58 @@
     requestAnimationFrame(loop);
   }
 
-  function start() {
+  function startGame(mode) {
     if (running) return;
+    gameMode = mode;
     running = true;
+
+    // Update labels
+    if (mode === 'ai') {
+      p1LabelEl.textContent = 'YOU';
+      p2LabelEl.textContent = 'AI';
+      instructionsEl.textContent = 'WASD / Arrows / Mouse to move your paddle';
+    } else {
+      p1LabelEl.textContent = 'P1';
+      p2LabelEl.textContent = 'P2';
+      instructionsEl.textContent = 'P1: W / S    —    P2: ↑ / ↓';
+    }
+
     overlay.classList.add('hidden');
+    document.body.style.cursor = 'none';
     init();
     requestAnimationFrame(loop);
   }
 
   function endGame(msg) {
     running = false;
+    document.body.style.cursor = '';
     overlayText.textContent = msg;
-    startBtn.textContent = 'Play Again';
+    modeSelect.classList.remove('hidden');
+    startBtn.classList.add('hidden');
+    overlay.classList.remove('hidden');
+  }
+
+  function showMenu() {
+    overlayText.textContent = 'First to 7 wins';
+    modeSelect.classList.remove('hidden');
+    startBtn.classList.add('hidden');
     overlay.classList.remove('hidden');
   }
 
   // ---- INPUT ----
 
-  // Mouse
+  // Mouse (only controls P1)
   canvas.addEventListener('mousemove', e => {
+    if (gameMode === '2p') return; // disable mouse in 2P mode
     usingMouse = true;
     const rect = canvas.getBoundingClientRect();
     const scaleY = H / rect.height;
     mouseY = (e.clientY - rect.top) * scaleY;
   });
 
-  // Touch
+  // Touch (only controls P1 in AI mode)
   canvas.addEventListener('touchmove', e => {
+    if (gameMode === '2p') return;
     e.preventDefault();
     usingMouse = true;
     const rect = canvas.getBoundingClientRect();
@@ -326,36 +359,52 @@
   }, { passive: false });
 
   canvas.addEventListener('touchstart', e => {
-    if (!running) start();
+    if (gameMode === '2p') return;
     usingMouse = true;
     const rect = canvas.getBoundingClientRect();
     const scaleY = H / rect.height;
     mouseY = (e.touches[0].clientY - rect.top) * scaleY;
   }, { passive: true });
 
-  // Keyboard fallback
+  // Keyboard
   let keysDown = {};
   document.addEventListener('keydown', e => {
     keysDown[e.code] = true;
-    if (e.code === 'Space' || e.code === 'Enter') {
-      if (!running) start();
+    // Prevent arrow keys from scrolling the page
+    if (e.code === 'ArrowUp' || e.code === 'ArrowDown') {
+      e.preventDefault();
     }
   });
   document.addEventListener('keyup', e => { keysDown[e.code] = false; });
 
+  // Paddle movement polling
   setInterval(() => {
     if (!running) return;
-    if (keysDown['ArrowUp'] || keysDown['KeyW']) {
+
+    // Player 1: W / S (and arrows in AI mode)
+    if (keysDown['KeyW'] || (gameMode === 'ai' && keysDown['ArrowUp'])) {
       usingMouse = false;
       p1.y -= PADDLE_SPEED;
     }
-    if (keysDown['ArrowDown'] || keysDown['KeyS']) {
+    if (keysDown['KeyS'] || (gameMode === 'ai' && keysDown['ArrowDown'])) {
       usingMouse = false;
       p1.y += PADDLE_SPEED;
     }
+
+    // Player 2: Arrow Up / Down (only in 2P mode)
+    if (gameMode === '2p') {
+      if (keysDown['ArrowUp']) {
+        p2.y -= PADDLE_SPEED;
+      }
+      if (keysDown['ArrowDown']) {
+        p2.y += PADDLE_SPEED;
+      }
+    }
   }, 16);
 
-  startBtn.addEventListener('click', start);
+  // Mode select buttons
+  btnAI.addEventListener('click', () => startGame('ai'));
+  btn2P.addEventListener('click', () => startGame('2p'));
 
   // Initial draw
   init();

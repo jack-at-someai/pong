@@ -11,12 +11,12 @@
     <h1>Pong</h1>
     <div class="scoreboard">
       <div class="player-score">
-        <span class="label">YOU</span>
+        <span class="label" id="p1-label">P1</span>
         <span class="score" id="p1-score">0</span>
       </div>
       <div class="divider">:</div>
       <div class="player-score">
-        <span class="label">AI</span>
+        <span class="label" id="p2-label">P2</span>
         <span class="score" id="p2-score">0</span>
       </div>
     </div>
@@ -24,10 +24,14 @@
       <canvas id="canvas"></canvas>
       <div id="overlay" class="overlay">
         <p id="overlay-text">First to 7 wins</p>
-        <button id="start-btn">Play</button>
+        <div id="mode-select" class="mode-select">
+          <button id="btn-ai" class="mode-btn">vs AI</button>
+          <button id="btn-2p" class="mode-btn">2 Player</button>
+        </div>
+        <button id="start-btn" class="hidden">Play Again</button>
       </div>
     </div>
-    <p class="instructions">Mouse or touch to move your paddle</p>
+    <p class="instructions" id="instructions">Choose a game mode</p>
   </div>
   <script src="game.js"></script>
 </body>
