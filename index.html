@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pong</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Pong</h1>
+    <div class="scoreboard">
+      <div class="player-score">
+        <span class="label">YOU</span>
+        <span class="score" id="p1-score">0</span>
+      </div>
+      <div class="divider">:</div>
+      <div class="player-score">
+        <span class="label">AI</span>
+        <span class="score" id="p2-score">0</span>
+      </div>
+    </div>
+    <div class="canvas-wrap">
+      <canvas id="canvas"></canvas>
+      <div id="overlay" class="overlay">
+        <p id="overlay-text">First to 7 wins</p>
+        <button id="start-btn">Play</button>
+      </div>
+    </div>
+    <p class="instructions">Mouse or touch to move your paddle</p>
+  </div>
+  <script src="game.js"></script>
+</body>
+</html>
